@@ -1,0 +1,75 @@
+{
+  "format": 1,
+  "restore": {
+    "G:\\My_file\\C#\\QQBGM\\QQBGM\\ConsoleApp3\\Lyrics_taskbar_display.csproj": {}
+  },
+  "projects": {
+    "G:\\My_file\\C#\\QQBGM\\QQBGM\\ConsoleApp3\\Lyrics_taskbar_display.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "G:\\My_file\\C#\\QQBGM\\QQBGM\\ConsoleApp3\\Lyrics_taskbar_display.csproj",
+        "projectName": "Lyrics_taskbar_display",
+        "projectPath": "G:\\My_file\\C#\\QQBGM\\QQBGM\\ConsoleApp3\\Lyrics_taskbar_display.csproj",
+        "packagesPath": "C:\\Users\\XiaoMiao_ICa\\.nuget\\packages\\",
+        "outputPath": "G:\\My_file\\C#\\QQBGM\\QQBGM\\ConsoleApp3\\obj\\",
+        "projectStyle": "PackageReference",
+        "skipContentFileWrite": true,
+        "UsingMicrosoftNETSdk": false,
+        "fallbackFolders": [
+          "D:\\Program_Files\\visual_studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\XiaoMiao_ICa\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net48"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net48": {
+            "projectReferences": {}
+          }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net48": {
+          "dependencies": {
+            "Microsoft.VCRTForwarders.140": {
+              "target": "Package",
+              "version": "[1.0.6, )"
+            }
+          },
+          "imports": [
+            "uap10.0.18362"
+          ],
+          "assetTargetFallback": true,
+          "warn": true
+        }
+      },
+      "runtimes": {
+        "win": {
+          "#import": []
+        },
+        "win-arm64": {
+          "#import": []
+        },
+        "win-x64": {
+          "#import": []
+        },
+        "win-x86": {
+          "#import": []
+        }
+      }
+    }
+  }
+}
