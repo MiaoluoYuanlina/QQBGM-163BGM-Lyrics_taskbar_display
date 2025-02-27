@@ -1,0 +1,2 @@
+# QQBGM-163BGM-Lyrics_taskbar_display
+可以让QQ音乐和网易云音乐的歌词显示才任务栏
