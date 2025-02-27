@@ -22,4 +22,8 @@
 > 实例QQ音乐
 > 0为QQ音乐 1为网易云音乐
 
-    ***.exe --type 0
+    .exe --type 0 
+
+  ![enter image description here](README/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-02-27%20213447.png)
+    
+![enter image description here](README/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-02-27%20213611.png)
