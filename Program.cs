@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Taskbar;
 using System.Timers;
+using Microsoft.Win32;
 
 namespace Lyrics_taskbar_display
 {
@@ -35,6 +36,15 @@ namespace Lyrics_taskbar_display
         const int SW_HIDE = 0;
         static IntPtr HWND_MESSAGE = new IntPtr(-3);
 
+        /// <summary>
+        /// 程序主入口
+        /// </summary>
+        /// <param name="args">启动参数：
+        /// --fps [数值] 设置帧率
+        /// --type [0/1] 设置音乐平台类型
+        /// --offsetx/--X [数值] X轴偏移
+        /// --offsety/--Y [数值] Y轴偏移
+        /// -noui 隐藏控制台界面</param>
         [STAThread]
         static void Main(string[] args)
         {
@@ -124,11 +134,15 @@ namespace Lyrics_taskbar_display
             Application.Run(form);
 
 
-            
+
 
         }
 
         #region 辅助方法
+        /// <summary>
+        /// 尝试解析下一个参数值
+        /// </summary>
+        /// <returns>是否成功解析</returns>
         private static bool TryParseNextArg(string[] args, ref int index, out int result)
         {
             result = 0;
@@ -147,15 +161,20 @@ namespace Lyrics_taskbar_display
             index++; // 正确移动索引
             return true;
         }
-
+        /// <summary>
+        /// 统一日志记录方法
+        /// </summary>
         private static void Log(string message) => Console.WriteLine($"[Config] {message}");
         private static void LogWarning(string message) => Console.WriteLine($"[Warning] {message}");
         private static void LogError(string message) => Console.WriteLine($"[Error] {message}");
         #endregion
+
+
     }
-    
+
     public class TransparentForm : Form
     {
+
         //启动参数
         int start_FPS = 20;
         int start_OffsetX = 0;
@@ -195,7 +214,7 @@ namespace Lyrics_taskbar_display
 
         //任务栏置顶
         [DllImport("user32.dll")]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,int X, int Y, int cx, int cy, uint uFlags);
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
         //原歌词透明
 
@@ -229,6 +248,9 @@ namespace Lyrics_taskbar_display
         private const int LWA_ALPHA = 0x2;
 
 
+        private const int WM_QUERYENDSESSION = 0x0011;
+        private const int WM_ENDSESSION = 0x0016;
+
         private Rectangle primaryScreenArea = Screen.PrimaryScreen.WorkingArea;//获取屏幕工作区域
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -252,6 +274,33 @@ namespace Lyrics_taskbar_display
         private int retryCount = 0;
         private const int MAX_RETRY = 3;
 
+        //关机
+        protected override void WndProc(ref Message m)
+        {
+            switch (m.Msg)
+            {
+                case WM_QUERYENDSESSION:
+                    // 立即同意结束会话
+                    m.Result = (IntPtr)1;
+                    Console.WriteLine("收到系统关机请求，准备退出...");
+                    StopCapture();
+                    Application.Exit();
+                    break;
+
+                case WM_ENDSESSION:
+                    if (m.WParam != IntPtr.Zero)
+                    {
+                        Console.WriteLine("系统会话结束，强制退出");
+                        StopCapture();
+                        Application.Exit();
+                    }
+                    break;
+
+                default:
+                    base.WndProc(ref m);
+                    break;
+            }
+        }
 
         // 窗口操作标志
         /// <summary>
@@ -280,7 +329,14 @@ namespace Lyrics_taskbar_display
             return (rect.Right - rect.Left, rect.Bottom - rect.Top);
         }
 
-        public void Start_parameters(int FPS ,int X, int Y,int TYPE)
+        /// <summary>
+        /// 设置启动参数
+        /// </summary>
+        /// <param name="FPS">刷新帧率</param>
+        /// <param name="X">X轴偏移量</param>
+        /// <param name="Y">Y轴偏移量</param>
+        /// <param name="TYPE">平台类型</param>
+        public void Start_parameters(int FPS, int X, int Y, int TYPE)
         {
             start_FPS = FPS;
             start_OffsetX = X;
@@ -289,8 +345,18 @@ namespace Lyrics_taskbar_display
 
         }
 
+        /// <summary>
+        /// 窗体构造函数
+        /// </summary>
+        /// <param name="start_TYPE">0=QQ音乐 1=网易云音乐</param>
         public TransparentForm(int start_TYPE = 0)
         {
+            SystemEvents.SessionEnding += (s, e) =>
+            {
+                Console.WriteLine($"收到系统会话结束事件: {e.Reason}");
+                StopCapture();
+                Application.Exit();
+            };
 
             // 基础设置
             TopMost = true;         // 置顶显示
@@ -345,7 +411,7 @@ namespace Lyrics_taskbar_display
                 {
                     Console.WriteLine("未能找到可用窗口。");
                 }
-                
+
 
                 Thread.Sleep(1000);
 
@@ -370,6 +436,9 @@ namespace Lyrics_taskbar_display
             targetWindowHandle = FindWindow(null, "桌面歌词");
         }
 
+        /// <summary>
+        /// 启动截图捕获线程
+        /// </summary>
         public void StartCapture()
         {
             isCapturing = true;
@@ -380,12 +449,27 @@ namespace Lyrics_taskbar_display
             captureThread.Start();
         }
 
+        /// <summary>
+        /// 安全停止截图线程
+        /// </summary>
         public void StopCapture()
         {
             isCapturing = false;
-            captureThread?.Join();
+
+            // 使用带超时的 Join
+            if (captureThread != null && captureThread.IsAlive)
+            {
+                if (!captureThread.Join(TimeSpan.FromSeconds(2))) // 最多等待2秒
+                {
+                    Console.WriteLine("强制终止捕获线程");
+                    captureThread.Interrupt();
+                }
+            }
         }
 
+        /// <summary>
+        /// 主捕获循环（每帧执行）
+        /// </summary>
         private void CaptureLoop()
         {
             while (isCapturing)
@@ -406,7 +490,7 @@ namespace Lyrics_taskbar_display
                         }
                     }));
                 }
-                Thread.Sleep(1000/start_FPS);  //FPS
+                Thread.Sleep(1000 / start_FPS);  //FPS
             }
         }
 
@@ -429,6 +513,9 @@ namespace Lyrics_taskbar_display
             return rect;
         }
 
+        /// <summary>
+        /// 更新窗口位置（根据任务栏位置）
+        /// </summary>
         private void UpdateWindowPosition()
         {
             // 获取位置
@@ -460,7 +547,9 @@ namespace Lyrics_taskbar_display
 
         }
 
-
+        /// <summary>
+        /// 捕获目标窗口内容
+        /// </summary>
         private void CaptureTargetWindow()
         {
             RECT rect;
@@ -500,7 +589,8 @@ namespace Lyrics_taskbar_display
                     else if (start_TYPE == 1)//网易云
                     {
                         i = 3;
-                    }else
+                    }
+                    else
                     {
                         i = 0;
                         Console.WriteLine($"未知TYPE类型");
@@ -537,6 +627,10 @@ namespace Lyrics_taskbar_display
             }
         }
 
+        /// <summary>
+        /// 处理黑色像素转透明
+        /// </summary>
+        /// <param name="bitmap">要处理的位图</param>
         private void ProcessBlackPixels(Bitmap bitmap)
         {
             // 使用锁确保单线程访问
@@ -587,7 +681,10 @@ namespace Lyrics_taskbar_display
             }
         }
 
-
+        /// <summary>
+        /// 更新显示图像（线程安全）
+        /// </summary>
+        /// <param name="newImage">新图像对象</param>
         public void UpdateImage(Bitmap newImage)
         {
             lock (this)
@@ -601,7 +698,10 @@ namespace Lyrics_taskbar_display
             }
         }
 
-
+        /// <summary>
+        /// 更新分层窗口显示
+        /// </summary>
+        /// <param name="bitmap">要显示的位图</param>
         private void UpdateWindow(Bitmap bitmap)
         {
             if (bitmap == null) return;
@@ -673,7 +773,25 @@ namespace Lyrics_taskbar_display
         {
             if (disposing)
             {
+                // 停止定时器
+                if (windowCheckTimer != null)
+                {
+                    windowCheckTimer.Stop();
+                    windowCheckTimer.Dispose();
+                }
+
+                // 释放线程资源
+                StopCapture();
+
+                // 释放图像资源
                 currentBitmap?.Dispose();
+
+                // 释放目标窗口句柄
+                if (targetWindowHandle != IntPtr.Zero)
+                {
+                    SetWindowLong(targetWindowHandle, GWL_EXSTYLE,
+                        GetWindowLong(targetWindowHandle, GWL_EXSTYLE) & ~WS_EX_TOOLWINDOW);
+                }
             }
             base.Dispose(disposing);
         }
